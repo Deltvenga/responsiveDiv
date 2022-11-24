@@ -35,6 +35,9 @@ const tick = () => {
 
 
 const handleMoving = (e, isResize) => {
+    if (e.type === 'touchmove') {
+        e = e.changedTouches[0];
+    }
     if (dragNDropProperties.mouseDown || isResize) {
         let nextCubePosition = {
             x: e.clientX - parentBlockSizes.x - dragNDropProperties.startClickPos.x,
@@ -49,9 +52,10 @@ const handleMoving = (e, isResize) => {
     }
 }
 
-document.addEventListener('mousemove', handleMoving);
-
-document.addEventListener('mousedown', (e) => {
+const handleDownEvent = (e) => {
+    if (e.type === "touchstart") {
+        e = e.changedTouches[0];
+    }
     dragNDropProperties.startClickPos.x = e.clientX - parentBlockSizes.x - cubePosition.x;
     dragNDropProperties.startClickPos.y = e.clientY - parentBlockSizes.y - cubePosition.y;
     if (e.clientX - parentBlockSizes.x > cubePosition.x && e.clientX - parentBlockSizes.x < cubePosition.x + cubePosition.w) {
@@ -59,11 +63,21 @@ document.addEventListener('mousedown', (e) => {
             dragNDropProperties.mouseDown = true;
         }
     }
-});
+}
 
-document.addEventListener('mouseup', (e) => {
+const handleUpEvent = (e) => {
     dragNDropProperties.mouseDown = false;
-});
+
+}
+
+document.addEventListener('mousemove', handleMoving);
+document.addEventListener('mousedown', handleDownEvent);
+document.addEventListener('mouseup', handleUpEvent);
+
+document.addEventListener('touchstart', handleDownEvent);
+document.addEventListener('touchend', handleUpEvent);
+document.addEventListener('touchcancel', handleUpEvent);
+document.addEventListener('touchmove', handleMoving);
 
 addEventListener('resize', () => {
     parentBlockSizes = document.getElementById('main').getBoundingClientRect();
