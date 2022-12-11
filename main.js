@@ -1,91 +1,123 @@
-require('./app.css');
+let canvas2 = document.getElementById("canvas");
+let context = canvas2.getContext("2d");
 
-let canvas = document.getElementById('canvas');
-let parentBlockSizes = document.getElementById('main').getBoundingClientRect();
-canvas.width = parentBlockSizes.width;
-canvas.height = parentBlockSizes.height;
-let ctx = canvas.getContext('2d');
-let requestAnimFrame = window.requestAnimationFrame;
+let img = new Image();
+img.src = "/images/image.png";
 
-const init = () => {
-    requestAnimFrame(tick)
-}
+let canvasWidth = 5000;
+let canvasHeight = 5000;
 
-const cubePosition = {
-    x: 0,
-    y: 0,
-    w: 100,
-    h: 100,
-}
+const t0 = performance.now();
+let t1;
 
-const dragNDropProperties = {
-    startClickPos: {
-        x: 0,
-        y: 0,
-    },
-    mouseDown: false,
-}
-
-const tick = () => {
-    ctx.clearRect(0, 0, parentBlockSizes.width, parentBlockSizes.height);
-    ctx.fillStyle = 'black';
-    ctx.fillRect(cubePosition.x, cubePosition.y, cubePosition.w, cubePosition.h);
-    requestAnimFrame(tick)
-}
-
-
-const handleMoving = (e, isResize) => {
-    if (e.type === 'touchmove') {
-        e = e.changedTouches[0];
+img.onload = function() {
+    for (let i = 0; i < 500; i++) {
+        new Entity();
     }
-    if (dragNDropProperties.mouseDown || isResize) {
-        let nextCubePosition = {
-            x: e.clientX - parentBlockSizes.x - dragNDropProperties.startClickPos.x,
-            y: e.clientY - parentBlockSizes.y - dragNDropProperties.startClickPos.y,
+    bufferImageWithShadow()
+}
+
+let gradColors = [[0, 125, 255], [123, 0, 100], [200, 51, 0]];
+let gradDirs = [1, 1, 1];
+
+const componentToHex = (c) => {
+    let hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+const rgbToHex = (r, g, b) => {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+const bufferImageWithShadow = () => {
+    let imageCanvas = document.getElementById("myCanvas"),
+        iCtx = imageCanvas.getContext("2d");
+    imageCanvas.width = img.width;
+    imageCanvas.height = img.height;
+    iCtx.width = 200;
+    iCtx.height = 200;
+
+    iCtx.shadowOffsetX = 10;
+    iCtx.shadowOffsetY = 10;
+    iCtx.shadowColor = 'black';
+    iCtx.shadowBlur = 12;
+    iCtx.drawImage(img, 0, 0, 200, 200);
+
+    let image = new Image();
+    image.src = imageCanvas.toDataURL();
+
+    const drawBuffered = () => {
+        canvas2.width = canvasWidth;
+        canvas2.height = canvasHeight;
+        let grd = context.createRadialGradient(
+            canvasWidth / 2,
+            canvasHeight / 2,
+            5,
+            canvasWidth / 2,
+            canvasHeight / 2, 2500
+        );
+        for (let i = 0; i < 3; i++) {
+            gradColors[i][i] += gradDirs[i];
+            if (gradColors[i][i] > 254 || gradColors[i][i] < 1) {
+                gradDirs[i] = -gradDirs[i];
+            }
+
         }
-        if (nextCubePosition.x < 0) nextCubePosition.x = 0;
-        if (nextCubePosition.y < 0) nextCubePosition.y = 0;
-        if (nextCubePosition.x > parentBlockSizes.width - cubePosition.w)nextCubePosition.x = parentBlockSizes.width - cubePosition.w;
-        if (nextCubePosition.y > parentBlockSizes.height - cubePosition.h)nextCubePosition.y = parentBlockSizes.height - cubePosition.h;
-        cubePosition.x = nextCubePosition.x;
-        cubePosition.y = nextCubePosition.y;
+        grd.addColorStop(0, rgbToHex(...gradColors[0]));
+        grd.addColorStop(0.5,  rgbToHex(...gradColors[1]));
+        grd.addColorStop(1,  rgbToHex(...gradColors[2]));
+
+        context.fillStyle = grd;
+        context.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        objects.forEach((item, index) => {
+            item.tick();
+            context.drawImage(image, item.x, item.y, 200, 200);
+        })
+        if (!t1) {
+            t1 = performance.now();
+            document.getElementById('performance').innerHTML = `first render after: ${Math.round(t1 - t0)} ms`;
+        }
+        requestAnimationFrame(drawBuffered);
+    }
+    drawBuffered();
+
+}
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else if (document.exitFullscreen) {
+        document.exitFullscreen();
     }
 }
 
-const handleDownEvent = (e) => {
-    if (e.type === "touchstart") {
-        e = e.changedTouches[0];
+let objects = [];
+class Entity {
+    constructor() {
+        this.x = Math.round(Math.random() * canvasWidth);
+        this.y = Math.round(Math.random() * canvasHeight);
+        this.xDelta = Math.random() * 2 - 1;
+        this.yDelta = Math.random() * 2 - 1;
+        objects.push(this);
     }
-    dragNDropProperties.startClickPos.x = e.clientX - parentBlockSizes.x - cubePosition.x;
-    dragNDropProperties.startClickPos.y = e.clientY - parentBlockSizes.y - cubePosition.y;
-    if (e.clientX - parentBlockSizes.x > cubePosition.x && e.clientX - parentBlockSizes.x < cubePosition.x + cubePosition.w) {
-        if (e.clientY - parentBlockSizes.y > cubePosition.y && e.clientY - parentBlockSizes.y < cubePosition.y + cubePosition.h) {
-            dragNDropProperties.mouseDown = true;
+
+    tick() {
+        this.x += this.xDelta;
+        this.y += this.yDelta;
+        if (this.x > canvasWidth) {
+            this.xDelta = -Math.random();
+        }
+        if (this.y > canvasHeight) {
+            this.yDelta = -Math.random();
+        }
+
+        if (this.x < 0) {
+            this.xDelta = Math.random();
+        }
+
+        if (this.y < 0) {
+            this.yDelta = Math.random();
         }
     }
 }
 
-const handleUpEvent = (e) => {
-    dragNDropProperties.mouseDown = false;
 
-}
-
-document.addEventListener('mousemove', handleMoving);
-document.addEventListener('mousedown', handleDownEvent);
-document.addEventListener('mouseup', handleUpEvent);
-
-document.addEventListener('touchstart', handleDownEvent);
-document.addEventListener('touchend', handleUpEvent);
-document.addEventListener('touchcancel', handleUpEvent);
-document.addEventListener('touchmove', handleMoving);
-
-addEventListener('resize', () => {
-    parentBlockSizes = document.getElementById('main').getBoundingClientRect();
-    canvas.width = parentBlockSizes.width;
-    canvas.height = parentBlockSizes.height;
-    let emulatedClientX = dragNDropProperties.startClickPos.x + parentBlockSizes.x + cubePosition.x;
-    let emulatedClientY = dragNDropProperties.startClickPos.y + parentBlockSizes.y + cubePosition.y;
-    handleMoving({clientX: emulatedClientX, clientY: emulatedClientY}, true)
-});
-
-init();
