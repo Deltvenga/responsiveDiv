@@ -4,14 +4,15 @@ let context = canvas2.getContext("2d");
 let img = new Image();
 img.src = "/images/image.png";
 
-let canvasWidth = 5000;
-let canvasHeight = 5000;
+const canvasWidth = 5000;
+const canvasHeight = 2800;
+const objectsCount = 500;
 
 const t0 = performance.now();
 let t1;
 
 img.onload = function() {
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < objectsCount; i++) {
         new Entity();
     }
     bufferImageWithShadow()
@@ -53,7 +54,7 @@ const bufferImageWithShadow = () => {
             canvasHeight / 2,
             5,
             canvasWidth / 2,
-            canvasHeight / 2, 2500
+            canvasHeight / 2, canvasWidth / 2
         );
         for (let i = 0; i < 3; i++) {
             gradColors[i][i] += gradDirs[i];
@@ -119,5 +120,7 @@ class Entity {
         }
     }
 }
+
+document.getElementById('toggleFullScreen').addEventListener('click', toggleFullScreen);
 
 
